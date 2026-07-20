@@ -1,0 +1,203 @@
+apiVersion: kops.k8s.io/v1alpha2
+kind: Cluster
+metadata:
+  creationTimestamp: "2017-01-01T00:00:00Z"
+  name: k8s1.tomas-virgl.e2b-test.dev
+spec:
+  api:
+    loadBalancer:
+      type: Public
+  authorization:
+    rbac: {}
+  channel: stable
+  cloudConfig: {}
+  cloudProvider: gce
+  configBase: memfs://tests/k8s1.tomas-virgl.e2b-test.dev
+  etcdClusters:
+  - cpuRequest: 200m
+    etcdMembers:
+    - instanceGroup: control-plane-us-west1-a
+      name: a
+    - instanceGroup: control-plane-us-west1-b
+      name: b
+    - instanceGroup: control-plane-us-west1-c
+      name: c
+    manager:
+      backupRetentionDays: 90
+    memoryRequest: 100Mi
+    name: main
+  - cpuRequest: 100m
+    etcdMembers:
+    - instanceGroup: control-plane-us-west1-a
+      name: a
+    - instanceGroup: control-plane-us-west1-b
+      name: b
+    - instanceGroup: control-plane-us-west1-c
+      name: c
+    manager:
+      backupRetentionDays: 90
+    memoryRequest: 100Mi
+    name: events
+  iam:
+    allowContainerRegistry: true
+    legacy: false
+  kubelet:
+    anonymousAuth: false
+  kubeProxy:
+    enabled: false
+  kubernetesApiAccess:
+  - 0.0.0.0/0
+  - ::/0
+  kubernetesVersion: 1.35.5
+  metricsServer:
+    enabled: true
+    insecure: true
+  networkID: default
+  networking:
+    cilium:
+      enableNodePort: true
+  nonMasqueradeCIDR: 100.64.0.0/10
+  podCIDR: 100.96.0.0/11
+  project: e2b-dev-tomas-virgl-k8s
+  serviceClusterIPRange: 100.64.0.0/13
+  sshAccess: []
+  subnets:
+  - cidr: 10.0.16.0/20
+    name: us-west1
+    region: us-west1
+    type: Private
+  topology:
+    dns:
+      type: None
+
+---
+
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  creationTimestamp: "2017-01-01T00:00:00Z"
+  labels:
+    kops.k8s.io/cluster: k8s1.tomas-virgl.e2b-test.dev
+  name: control-plane-us-west1-a
+spec:
+  image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250606
+  machineType: e2-medium
+  maxSize: 1
+  minSize: 1
+  role: Master
+  rootVolume:
+    size: 64
+  subnets:
+  - us-west1
+  zones:
+  - us-west1-a
+
+---
+
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  creationTimestamp: "2017-01-01T00:00:00Z"
+  labels:
+    kops.k8s.io/cluster: k8s1.tomas-virgl.e2b-test.dev
+  name: control-plane-us-west1-b
+spec:
+  image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250606
+  machineType: e2-medium
+  maxSize: 1
+  minSize: 1
+  role: Master
+  rootVolume:
+    size: 64
+  subnets:
+  - us-west1
+  zones:
+  - us-west1-b
+
+---
+
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  creationTimestamp: "2017-01-01T00:00:00Z"
+  labels:
+    kops.k8s.io/cluster: k8s1.tomas-virgl.e2b-test.dev
+  name: control-plane-us-west1-c
+spec:
+  image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250606
+  machineType: e2-medium
+  maxSize: 1
+  minSize: 1
+  role: Master
+  rootVolume:
+    size: 64
+  subnets:
+  - us-west1
+  zones:
+  - us-west1-c
+
+---
+
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  creationTimestamp: "2017-01-01T00:00:00Z"
+  labels:
+    kops.k8s.io/cluster: k8s1.tomas-virgl.e2b-test.dev
+  name: nodes-us-west1-a
+spec:
+  image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250606
+  machineType: e2-medium
+  maxSize: 1
+  minSize: 1
+  role: Node
+  rootVolume:
+    size: 128
+  subnets:
+  - us-west1
+  zones:
+  - us-west1-a
+
+---
+
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  creationTimestamp: "2017-01-01T00:00:00Z"
+  labels:
+    kops.k8s.io/cluster: k8s1.tomas-virgl.e2b-test.dev
+  name: nodes-us-west1-b
+spec:
+  image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250606
+  machineType: e2-medium
+  maxSize: 1
+  minSize: 1
+  role: Node
+  rootVolume:
+    size: 128
+  subnets:
+  - us-west1
+  zones:
+  - us-west1-b
+
+---
+
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  creationTimestamp: "2017-01-01T00:00:00Z"
+  labels:
+    kops.k8s.io/cluster: k8s1.tomas-virgl.e2b-test.dev
+  name: nodes-us-west1-c
+spec:
+  image: ubuntu-os-cloud/ubuntu-2404-noble-amd64-v20250606
+  machineType: e2-medium
+  maxSize: 1
+  minSize: 1
+  role: Node
+  rootVolume:
+    size: 128
+  subnets:
+  - us-west1
+  zones:
+  - us-west1-c

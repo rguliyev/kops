@@ -1,0 +1,57 @@
+Assets:
+  amd64:
+  - 4ba1f892bd52fdae7cd2abb1b1111054ff274c71f88af0a85fd9f1107e8d46c8@https://dl.k8s.io/release/v1.35.5/bin/linux/amd64/kubelet
+  - 90f75ea6ecc9ea5633262e1c0b83a40560003b30fc94a04cb099404fcef0c224@https://dl.k8s.io/release/v1.35.5/bin/linux/amd64/kubectl
+  - 3a3cb26c58744e036c9e82acfecbaf283177184573134f11eeb83210464bc66c@https://dl.k8s.io/release/v1.35.5/bin/linux/amd64/mounter
+  - b5852509ab5c950485794afd49a3fd1c3d6166db988c15b683d2373b7055300f@https://artifacts.k8s.io/binaries/cloud-provider-gcp/v35.0.0/auth-provider-gcp/linux/amd64/auth-provider-gcp
+  - 62e77f6294e432dca5b56ad7e7d6085b5bbb526ebba0a51d832714f9b04cfdfd@https://github.com/containerd/containerd/releases/download/v2.2.4/containerd-2.2.4-linux-amd64.tar.gz
+  - 66fa8390be8fb3b23dfbb60c767368bb5b51f1acfa88692bbff1a82953d4d9e9@https://github.com/opencontainers/runc/releases/download/v1.3.5/runc.amd64
+  arm64:
+  - a100cfe89d7dd7a49a07164c6ccb78df02563483ef5b37330e1150e37e8868b3@https://dl.k8s.io/release/v1.35.5/bin/linux/arm64/kubelet
+  - ac69e06fd6860d69786692f5af1c3a1208ed54f8366a4d97ab15c172e99765ee@https://dl.k8s.io/release/v1.35.5/bin/linux/arm64/kubectl
+  - b576052af9da1eb95502ae92c1b6a1f603839cac317999c884dde9331b5b8f94@https://dl.k8s.io/release/v1.35.5/bin/linux/arm64/mounter
+  - 510aee27ef32a27b76e461e9084719365210d56166057b37db290a72dfecbffa@https://artifacts.k8s.io/binaries/cloud-provider-gcp/v35.0.0/auth-provider-gcp/linux/arm64/auth-provider-gcp
+  - d0897c8e27c96a7b7d4c73e9b278ea9f559dda619d497d88b323a528bd1412c3@https://github.com/containerd/containerd/releases/download/v2.2.4/containerd-2.2.4-linux-arm64.tar.gz
+  - bd843d75a788e612c9df286b1fa519a44fcbb7a7b8d01e2268431433cc7c718c@https://github.com/opencontainers/runc/releases/download/v1.3.5/runc.arm64
+CAs: {}
+ClusterName: k8s1.tomas-virgl.e2b-test.dev
+Hooks:
+- null
+- null
+KeypairIDs:
+  kubernetes-ca: "6982820025135291416230495506"
+KubeProxy: null
+KubeletConfig:
+  anonymousAuth: false
+  cgroupDriver: systemd
+  cgroupRoot: /
+  cloudProvider: external
+  clusterDNS: 100.64.0.10
+  clusterDomain: cluster.local
+  enableDebuggingHandlers: true
+  evictionHard: memory.available<100Mi,nodefs.available<10%,nodefs.inodesFree<5%,imagefs.available<10%,imagefs.inodesFree<5%
+  hairpinMode: promiscuous-bridge
+  kubeconfigPath: /var/lib/kubelet/kubeconfig
+  logLevel: 2
+  nodeLabels:
+    node-role.kubernetes.io/node: ""
+  podManifestPath: /etc/kubernetes/manifests
+  protectKernelDefaults: true
+  shutdownGracePeriod: 30s
+  shutdownGracePeriodCriticalPods: 10s
+KubernetesVersion: 1.35.5
+Networking:
+  cilium: {}
+  nonMasqueradeCIDR: 100.64.0.0/10
+  serviceClusterIPRange: 100.64.0.0/13
+UpdatePolicy: automatic
+containerdConfig:
+  logLevel: info
+  runc:
+    version: 1.3.5
+  sandboxImage: registry.k8s.io/pause:3.10.1
+  version: 2.2.4
+multizone: true
+nodeTags: k8s1-tomas-virgl-e2b-test-dev-k8s-io-role-node
+usesLegacyGossip: false
+usesNoneDNS: true

@@ -284,9 +284,11 @@ func (h *IntegrationTestHarness) SetupMockAWS() *awsup.MockAWSCloud {
 
 // SetupMockGCE configures a mock GCE cloud provider
 func (h *IntegrationTestHarness) SetupMockGCE() *gcemock.MockGCECloud {
-	project := "testproject"
-	region := "us-test1"
+	return h.SetupMockGCEForProject("testproject", "us-test1")
+}
 
+// SetupMockGCEForProject configures a mock GCE cloud provider for the specified project and region.
+func (h *IntegrationTestHarness) SetupMockGCEForProject(project, region string) *gcemock.MockGCECloud {
 	cloud := gcemock.InstallMockGCECloud(region, project)
 
 	cloud.Compute().Networks().Insert(project, &compute.Network{
