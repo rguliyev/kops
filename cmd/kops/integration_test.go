@@ -62,6 +62,7 @@ type integrationTest struct {
 	srcDir         string
 	version        string
 	kopsVersion    string
+	keysetsFixture string
 	private        bool
 	zones          int
 	expectPolicies bool
@@ -117,6 +118,11 @@ func (i *integrationTest) withVersion(version string) *integrationTest {
 
 func (i *integrationTest) withKopsVersion(version string) *integrationTest {
 	i.kopsVersion = version
+	return i
+}
+
+func (i *integrationTest) withKeysetsFixture(filename string) *integrationTest {
+	i.keysetsFixture = filename
 	return i
 }
 
@@ -478,6 +484,7 @@ func TestGCEKopsModuleExample1(t *testing.T) {
 	newIntegrationTest("k8s1.tomas-virgl.e2b-test.dev", "gce-kops-module-example1").
 		withoutSSHKey().
 		withKopsVersion("1.35.1").
+		withKeysetsFixture("golden-pki.json").
 		withGCEProject("e2b-dev-tomas-virgl-k8s", "us-west1").
 		withGCEInstanceGroups(
 			[]string{"control-plane-us-west1-a", "control-plane-us-west1-b", "control-plane-us-west1-c"},
@@ -1428,6 +1435,11 @@ func (i *integrationTest) setupCluster(t *testing.T, ctx context.Context, inputY
 		t.Fatalf("error getting keystore: %v", err)
 	}
 
+	if i.keysetsFixture != "" {
+		i.storeKeysetsFixture(t, ctx, keyStore)
+		return factory
+	}
+
 	storeKeyset(t, ctx, keyStore, fi.CertificateIDCA, &testingKeyset{
 		primaryKey:           "-----BEGIN RSA PRIVATE KEY-----\nMIIBOgIBAAJBANFI3zr0Tk8krsW8vwjfMpzJOlWQ8616vG3YPa2qAgI7V4oKwfV0\nyIg1jt+H6f4P/wkPAPTPTfRp9Iy8oHEEFw0CAwEAAQJATmTyoZ3D+6dtBErocEVT\nKyHBhS3P6YrRLIBU0kmdiQHN8BuzvENqm5PASTq1m6yAAJs7qu9S0kO8u4G+SILv\n7QIhAPNCeJoFHmNUwQ1kxuta1RqICGcNoA4Yx5LiHXd9dPM7AiEA3D7gq8WB8csD\nghBNu/zLy3RdFCkfJqWkX5FhdX29alcCIHw4A1HTL1NV4kcuoQ1qEsw7jt7g7EyG\nhtMQuC9eVywlAiA1Z12s6Og4S+Se3fsrUQHNZHrJT6tJALMZpTO/fGy4YwIhANlJ\nR6hkVKtJp9zhipu6WpvpiAtoIlsNnPMPyuDRwV/u\n-----END RSA PRIVATE KEY-----",
 		primaryCertificate:   "-----BEGIN CERTIFICATE-----\nMIIBbjCCARigAwIBAgIMFpANqBD8NSD82AUSMA0GCSqGSIb3DQEBCwUAMBgxFjAU\nBgNVBAMTDWt1YmVybmV0ZXMtY2EwHhcNMjEwNzA3MDcwODAwWhcNMzEwNzA3MDcw\nODAwWjAYMRYwFAYDVQQDEw1rdWJlcm5ldGVzLWNhMFwwDQYJKoZIhvcNAQEBBQAD\nSwAwSAJBANFI3zr0Tk8krsW8vwjfMpzJOlWQ8616vG3YPa2qAgI7V4oKwfV0yIg1\njt+H6f4P/wkPAPTPTfRp9Iy8oHEEFw0CAwEAAaNCMEAwDgYDVR0PAQH/BAQDAgEG\nMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFNG3zVjTcLlJwDsJ4/K9DV7KohUA\nMA0GCSqGSIb3DQEBCwUAA0EAB8d03fY2w7WKpfO29qI295pu2C4ca9AiVGOpgSc8\ntmQsq6rcxt3T+rb589PVtz0mw/cKTxOk6gH2CCC+yHfy2w==\n-----END CERTIFICATE-----",
@@ -1500,9 +1512,78 @@ func (i *integrationTest) setupCluster(t *testing.T, ctx context.Context, inputY
 	return factory
 }
 
+type keysetsFixture struct {
+	CACertificatesPEM       map[string]string `json:"ca_certificates_pem"`
+	PrivateKeysPEM          map[string]string `json:"private_keys_pem"`
+	KeypairIDs              map[string]string `json:"keypair_ids"`
+	ServiceAccountPublicKey string            `json:"service_account_public_keys"`
+}
+
+func (i *integrationTest) storeKeysetsFixture(t *testing.T, ctx context.Context, keyStore fi.Keystore) {
+	b, err := os.ReadFile(path.Join(i.srcDir, i.keysetsFixture))
+	if err != nil {
+		t.Fatalf("reading keysets fixture: %v", err)
+	}
+	var fixture keysetsFixture
+	if err := json.Unmarshal(b, &fixture); err != nil {
+		t.Fatalf("decoding keysets fixture: %v", err)
+	}
+	keys := func(m map[string]string) []string {
+		out := make([]string, 0, len(m))
+		for key := range m {
+			out = append(out, key)
+		}
+		sort.Strings(out)
+		return out
+	}
+	names := keys(fixture.CACertificatesPEM)
+	if len(names) == 0 {
+		t.Fatalf("keysets fixture contains no keysets")
+	}
+	if !reflect.DeepEqual(names, keys(fixture.PrivateKeysPEM)) || !reflect.DeepEqual(names, keys(fixture.KeypairIDs)) {
+		t.Fatalf("keysets fixture map keys do not match")
+	}
+	if fixture.ServiceAccountPublicKey == "" {
+		t.Fatalf("keysets fixture service_account_public_keys is empty")
+	}
+	serviceAccountKeyPEM, ok := fixture.PrivateKeysPEM["service-account"]
+	if !ok {
+		t.Fatalf("keysets fixture does not contain service-account")
+	}
+	serviceAccountKey, err := pki.ParsePEMPrivateKey([]byte(serviceAccountKeyPEM))
+	if err != nil {
+		t.Fatalf("loading service-account private key: %v", err)
+	}
+	if serviceAccountKey == nil {
+		t.Fatalf("loading service-account private key: no key found")
+	}
+	publicKeyDER, err := x509.MarshalPKIXPublicKey(serviceAccountKey.Key.Public())
+	if err != nil {
+		t.Fatalf("marshalling service-account public key: %v", err)
+	}
+	var publicKeyPEM bytes.Buffer
+	if err := pem.Encode(&publicKeyPEM, &pem.Block{Type: "RSA PUBLIC KEY", Bytes: publicKeyDER}); err != nil {
+		t.Fatalf("encoding service-account public key: %v", err)
+	}
+	if publicKeyPEM.String() != fixture.ServiceAccountPublicKey {
+		t.Fatalf("keysets fixture service_account_public_keys does not match service-account private key")
+	}
+	for _, name := range names {
+		if fixture.CACertificatesPEM[name] == "" || fixture.PrivateKeysPEM[name] == "" || fixture.KeypairIDs[name] == "" {
+			t.Fatalf("keysets fixture keyset %q has an empty required value", name)
+		}
+		storeKeyset(t, ctx, keyStore, name, &testingKeyset{
+			primaryKey:         fixture.PrivateKeysPEM[name],
+			primaryCertificate: fixture.CACertificatesPEM[name],
+			primaryID:          fixture.KeypairIDs[name],
+		})
+	}
+}
+
 type testingKeyset struct {
 	primaryKey           string
 	primaryCertificate   string
+	primaryID            string
 	secondaryKey         string
 	secondaryCertificate string
 }
@@ -1522,6 +1603,11 @@ func storeKeyset(t *testing.T, ctx context.Context, keyStore fi.Keystore, name s
 		keyset, err := fi.NewKeyset(cert, privateKey)
 		if err != nil {
 			t.Fatalf("error creating keyset: %v", err)
+		}
+		if testingKeyset.primaryID != "" {
+			delete(keyset.Items, keyset.Primary.Id)
+			keyset.Primary.Id = testingKeyset.primaryID
+			keyset.Items[keyset.Primary.Id] = keyset.Primary
 		}
 
 		if testingKeyset.secondaryKey != "" {
