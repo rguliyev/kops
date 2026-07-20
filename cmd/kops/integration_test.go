@@ -75,6 +75,11 @@ type integrationTest struct {
 	nthRebalance bool
 	// enable GCE startup script
 	startupScript bool
+	// GCE instance group names override the legacy names derived from zones.
+	gceControlPlaneInstanceGroups []string
+	gceNodeInstanceGroups         []string
+	gceProject                    string
+	gceRegion                     string
 	// verify "kops get assets" functionality
 	testGetAssets bool
 }
@@ -108,6 +113,18 @@ func (i *integrationTest) withVersion(version string) *integrationTest {
 
 func (i *integrationTest) withZones(zones int) *integrationTest {
 	i.zones = zones
+	return i
+}
+
+func (i *integrationTest) withGCEInstanceGroups(controlPlane, nodes []string) *integrationTest {
+	i.gceControlPlaneInstanceGroups = controlPlane
+	i.gceNodeInstanceGroups = nodes
+	return i
+}
+
+func (i *integrationTest) withGCEProject(project, region string) *integrationTest {
+	i.gceProject = project
+	i.gceRegion = region
 	return i
 }
 
@@ -437,6 +454,23 @@ func TestMinimalGCEDNSNone(t *testing.T) {
 		withAddons(
 			gcpCCMAddon,
 			gcpPDCSIAddon,
+		).
+		runTestTerraformGCE(t)
+}
+
+func TestGCEKopsModuleExample1(t *testing.T) {
+	newIntegrationTest("k8s1.tomas-virgl.e2b-test.dev", "gce-kops-module-example1").
+		withoutSSHKey().
+		withGCEProject("e2b-dev-tomas-virgl-k8s", "us-west1").
+		withGCEInstanceGroups(
+			[]string{"control-plane-us-west1-a", "control-plane-us-west1-b", "control-plane-us-west1-c"},
+			[]string{"nodes-us-west1-a", "nodes-us-west1-b", "nodes-us-west1-c"},
+		).
+		withAddons(
+			ciliumAddon,
+			gcpCCMAddon,
+			gcpPDCSIAddon,
+			metricsServerAddon,
 		).
 		runTestTerraformGCE(t)
 }
@@ -1641,16 +1675,13 @@ func (i *integrationTest) runTestTerraformGCE(t *testing.T) {
 	defer h.Close()
 
 	h.MockKopsVersion("1.34.0-beta.1")
-	h.SetupMockGCE()
+	if i.gceProject == "" {
+		h.SetupMockGCE()
+	} else {
+		h.SetupMockGCEForProject(i.gceProject, i.gceRegion)
+	}
 
 	expectedFilenames := i.expectTerraformFilenames
-
-	prefix := "google_compute_instance_template_nodes-" + gce.SafeClusterName(i.clusterName) + "_metadata_"
-	if !i.startupScript {
-		expectedFilenames = append(expectedFilenames, prefix+"user-data")
-	} else {
-		expectedFilenames = append(expectedFilenames, prefix+"startup-script")
-	}
 
 	expectedFilenames = append(expectedFilenames,
 		"aws_s3_object_cluster-completed.spec_content",
@@ -1658,7 +1689,6 @@ func (i *integrationTest) runTestTerraformGCE(t *testing.T) {
 		"aws_s3_object_etcd-cluster-spec-main_content",
 		"aws_s3_object_kops-version.txt_content",
 		"aws_s3_object_manifests-static-kube-apiserver-healthcheck_content",
-		"aws_s3_object_nodeupconfig-nodes_content",
 		"aws_s3_object_"+i.clusterName+"-addons-bootstrap_content",
 		"aws_s3_object_"+i.clusterName+"-addons-coredns.addons.k8s.io-k8s-1.12_content",
 		"aws_s3_object_"+i.clusterName+"-addons-kops-controller.addons.k8s.io-k8s-1.16_content",
@@ -1667,14 +1697,35 @@ func (i *integrationTest) runTestTerraformGCE(t *testing.T) {
 		"aws_s3_object_"+i.clusterName+"-addons-storage-gce.addons.k8s.io-v1.7.0_content",
 	)
 
-	for j := 0; j < i.zones; j++ {
-		zone := "us-test1-" + string([]byte{byte('a') + byte(j)})
+	nodeInstanceGroups := i.gceNodeInstanceGroups
+	if nodeInstanceGroups == nil {
+		nodeInstanceGroups = []string{"nodes"}
+	}
+	for _, instanceGroup := range nodeInstanceGroups {
+		expectedFilenames = append(expectedFilenames, "aws_s3_object_nodeupconfig-"+instanceGroup+"_content")
 
-		expectedFilenames = append(expectedFilenames, "aws_s3_object_manifests-etcdmanager-events-master-"+zone+"_content")
-		expectedFilenames = append(expectedFilenames, "aws_s3_object_manifests-etcdmanager-main-master-"+zone+"_content")
-		expectedFilenames = append(expectedFilenames, "aws_s3_object_nodeupconfig-master-"+zone+"_content")
+		prefix := "google_compute_instance_template_" + instanceGroup + "-" + gce.SafeClusterName(i.clusterName) + "_metadata_"
+		if !i.startupScript {
+			expectedFilenames = append(expectedFilenames, prefix+"user-data")
+		} else {
+			expectedFilenames = append(expectedFilenames, prefix+"startup-script")
+		}
+	}
 
-		prefix := "google_compute_instance_template_master-" + zone + "-" + gce.SafeClusterName(i.clusterName) + "_metadata_"
+	controlPlaneInstanceGroups := i.gceControlPlaneInstanceGroups
+	if controlPlaneInstanceGroups == nil {
+		for j := 0; j < i.zones; j++ {
+			zone := "us-test1-" + string([]byte{byte('a') + byte(j)})
+			controlPlaneInstanceGroups = append(controlPlaneInstanceGroups, "master-"+zone)
+		}
+	}
+	for _, instanceGroup := range controlPlaneInstanceGroups {
+
+		expectedFilenames = append(expectedFilenames, "aws_s3_object_manifests-etcdmanager-events-"+instanceGroup+"_content")
+		expectedFilenames = append(expectedFilenames, "aws_s3_object_manifests-etcdmanager-main-"+instanceGroup+"_content")
+		expectedFilenames = append(expectedFilenames, "aws_s3_object_nodeupconfig-"+instanceGroup+"_content")
+
+		prefix := "google_compute_instance_template_" + instanceGroup + "-" + gce.SafeClusterName(i.clusterName) + "_metadata_"
 		if !i.startupScript {
 			expectedFilenames = append(expectedFilenames, prefix+"user-data")
 		} else {

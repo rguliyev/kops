@@ -1,0 +1,248 @@
+apiVersion: kops.k8s.io/v1alpha2
+kind: Cluster
+metadata:
+  creationTimestamp: "2017-01-01T00:00:00Z"
+  name: k8s1.tomas-virgl.e2b-test.dev
+spec:
+  api:
+    loadBalancer:
+      type: Public
+  authorization:
+    rbac: {}
+  channel: stable
+  cloudConfig:
+    gcpPDCSIDriver:
+      defaultStorageClassName: balanced-csi
+      enabled: true
+      version: v1.22.1
+    manageStorageClasses: true
+    multizone: true
+    nodeTags: k8s1-tomas-virgl-e2b-test-dev-k8s-io-role-node
+  cloudControllerManager:
+    allocateNodeCIDRs: true
+    cidrAllocatorType: CloudAllocator
+    clusterCIDR: 100.96.0.0/11
+    clusterName: k8s1-tomas-virgl-e2b-test-dev
+    controllers:
+    - '*'
+    image: registry.k8s.io/cloud-provider-gcp/cloud-controller-manager:v35.0.0
+    leaderElection:
+      leaderElect: true
+  cloudProvider: gce
+  clusterDNSDomain: cluster.local
+  configBase: memfs://tests/k8s1.tomas-virgl.e2b-test.dev
+  containerd:
+    logLevel: info
+    runc:
+      version: 1.3.5
+    sandboxImage: registry.k8s.io/pause:3.10.1
+    version: 2.2.4
+  etcdClusters:
+  - backups:
+      backupStore: memfs://tests/k8s1.tomas-virgl.e2b-test.dev/backups/etcd/main
+    cpuRequest: 200m
+    etcdMembers:
+    - instanceGroup: control-plane-us-west1-a
+      name: a
+    - instanceGroup: control-plane-us-west1-b
+      name: b
+    - instanceGroup: control-plane-us-west1-c
+      name: c
+    manager:
+      backupRetentionDays: 90
+    memoryRequest: 100Mi
+    name: main
+    version: 3.6.11
+  - backups:
+      backupStore: memfs://tests/k8s1.tomas-virgl.e2b-test.dev/backups/etcd/events
+    cpuRequest: 100m
+    etcdMembers:
+    - instanceGroup: control-plane-us-west1-a
+      name: a
+    - instanceGroup: control-plane-us-west1-b
+      name: b
+    - instanceGroup: control-plane-us-west1-c
+      name: c
+    manager:
+      backupRetentionDays: 90
+    memoryRequest: 100Mi
+    name: events
+    version: 3.6.11
+  iam:
+    allowContainerRegistry: true
+    legacy: false
+  keyStore: memfs://tests/k8s1.tomas-virgl.e2b-test.dev/pki
+  kubeAPIServer:
+    allowPrivileged: true
+    anonymousAuth: false
+    apiAudiences:
+    - kubernetes.svc.default
+    apiServerCount: 3
+    authorizationMode: Node,RBAC
+    bindAddress: 0.0.0.0
+    enableAdmissionPlugins:
+    - DefaultStorageClass
+    - DefaultTolerationSeconds
+    - LimitRanger
+    - MutatingAdmissionWebhook
+    - NamespaceLifecycle
+    - NodeRestriction
+    - ResourceQuota
+    - RuntimeClass
+    - ServiceAccount
+    - ValidatingAdmissionPolicy
+    - ValidatingAdmissionWebhook
+    enableAggregatorRouting: true
+    etcdServers:
+    - https://127.0.0.1:4001
+    etcdServersOverrides:
+    - /events#https://127.0.0.1:4002
+    image: registry.k8s.io/kube-apiserver:v1.35.5
+    kubeletPreferredAddressTypes:
+    - InternalIP
+    - Hostname
+    - ExternalIP
+    logLevel: 2
+    requestheaderAllowedNames:
+    - aggregator
+    requestheaderExtraHeaderPrefixes:
+    - X-Remote-Extra-
+    requestheaderGroupHeaders:
+    - X-Remote-Group
+    requestheaderUsernameHeaders:
+    - X-Remote-User
+    securePort: 443
+    serviceAccountIssuer: https://api.internal.k8s1.tomas-virgl.e2b-test.dev
+    serviceAccountJWKSURI: https://api.internal.k8s1.tomas-virgl.e2b-test.dev/openid/v1/jwks
+    serviceClusterIPRange: 100.64.0.0/13
+    storageBackend: etcd3
+  kubeControllerManager:
+    allocateNodeCIDRs: true
+    attachDetachReconcileSyncPeriod: 1m0s
+    cloudProvider: external
+    clusterCIDR: 100.96.0.0/11
+    clusterName: k8s1.tomas-virgl.e2b-test.dev
+    configureCloudRoutes: false
+    image: registry.k8s.io/kube-controller-manager:v1.35.5
+    leaderElection:
+      leaderElect: true
+    logLevel: 2
+    useServiceAccountCredentials: true
+  kubeDNS:
+    cacheMaxConcurrent: 150
+    cacheMaxSize: 1000
+    cpuRequest: 100m
+    domain: cluster.local
+    memoryLimit: 170Mi
+    memoryRequest: 70Mi
+    nodeLocalDNS:
+      cpuRequest: 25m
+      enabled: false
+      image: registry.k8s.io/dns/k8s-dns-node-cache:1.26.0
+      memoryRequest: 5Mi
+    provider: CoreDNS
+    serverIP: 100.64.0.10
+  kubeProxy:
+    clusterCIDR: 100.96.0.0/11
+    cpuRequest: 100m
+    enabled: false
+    image: registry.k8s.io/kube-proxy:v1.35.5
+    logLevel: 2
+  kubeScheduler:
+    image: registry.k8s.io/kube-scheduler:v1.35.5
+    leaderElection:
+      leaderElect: true
+    logLevel: 2
+  kubelet:
+    anonymousAuth: false
+    cgroupDriver: systemd
+    cgroupRoot: /
+    cloudProvider: external
+    clusterDNS: 100.64.0.10
+    clusterDomain: cluster.local
+    enableDebuggingHandlers: true
+    evictionHard: memory.available<100Mi,nodefs.available<10%,nodefs.inodesFree<5%,imagefs.available<10%,imagefs.inodesFree<5%
+    hairpinMode: promiscuous-bridge
+    kubeconfigPath: /var/lib/kubelet/kubeconfig
+    logLevel: 2
+    podManifestPath: /etc/kubernetes/manifests
+    protectKernelDefaults: true
+    shutdownGracePeriod: 30s
+    shutdownGracePeriodCriticalPods: 10s
+  kubernetesApiAccess:
+  - 0.0.0.0/0
+  - ::/0
+  kubernetesVersion: 1.35.5
+  masterKubelet:
+    anonymousAuth: false
+    cgroupDriver: systemd
+    cgroupRoot: /
+    cloudProvider: external
+    clusterDNS: 100.64.0.10
+    clusterDomain: cluster.local
+    enableDebuggingHandlers: true
+    evictionHard: memory.available<100Mi,nodefs.available<10%,nodefs.inodesFree<5%,imagefs.available<10%,imagefs.inodesFree<5%
+    featureGates:
+      ImageVolume: "true"
+    hairpinMode: promiscuous-bridge
+    kubeconfigPath: /var/lib/kubelet/kubeconfig
+    logLevel: 2
+    podManifestPath: /etc/kubernetes/manifests
+    protectKernelDefaults: true
+    shutdownGracePeriod: 30s
+    shutdownGracePeriodCriticalPods: 10s
+  metricsServer:
+    enabled: true
+    insecure: true
+  networkID: default
+  networking:
+    cilium:
+      agentPrometheusPort: 9090
+      bpfCTGlobalAnyMax: 262144
+      bpfCTGlobalTCPMax: 524288
+      bpfLBAlgorithm: random
+      bpfLBMaglevTableSize: "16381"
+      bpfLBMapMax: 65536
+      bpfNATGlobalMax: 524288
+      bpfNeighGlobalMax: 524288
+      bpfPolicyMapMax: 16384
+      clusterName: default
+      cniExclusive: true
+      cpuRequest: 25m
+      disableCNPStatusUpdates: true
+      disableMasquerade: false
+      enableBPFMasquerade: false
+      enableEndpointHealthChecking: true
+      enableL7Proxy: true
+      enableLocalRedirectPolicy: false
+      enableNodePort: true
+      enableRemoteNodeIdentity: true
+      enableUnreachableRoutes: false
+      gatewayAPI:
+        enabled: false
+      hubble:
+        enabled: false
+      identityAllocationMode: crd
+      identityChangeGracePeriod: 5s
+      ingress:
+        enabled: false
+      ipam: kubernetes
+      memoryRequest: 128Mi
+      monitorAggregation: medium
+      sidecarIstioProxyImage: cilium/istio_proxy
+      toFqdnsDnsRejectResponseCode: refused
+      tunnel: vxlan
+      version: v1.18.6
+  nonMasqueradeCIDR: 100.64.0.0/10
+  podCIDR: 100.96.0.0/11
+  project: e2b-dev-tomas-virgl-k8s
+  secretStore: memfs://tests/k8s1.tomas-virgl.e2b-test.dev/secrets
+  serviceClusterIPRange: 100.64.0.0/13
+  subnets:
+  - cidr: 10.0.16.0/20
+    name: us-west1
+    region: us-west1
+    type: Private
+  topology:
+    dns:
+      type: None
