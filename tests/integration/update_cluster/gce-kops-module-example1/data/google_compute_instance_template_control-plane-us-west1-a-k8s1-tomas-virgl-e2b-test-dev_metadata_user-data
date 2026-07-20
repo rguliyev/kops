@@ -125,7 +125,7 @@ ClusterName: k8s1.tomas-virgl.e2b-test.dev
 ConfigBase: memfs://tests/k8s1.tomas-virgl.e2b-test.dev
 InstanceGroupName: control-plane-us-west1-a
 InstanceGroupRole: ControlPlane
-NodeupConfigHash: k8JdW522LCf99LRB7XMg/JGn7CCZSKc0nXpYD2uBvfY=
+NodeupConfigHash: mT2AYcyRKpEtOmXddVgni/50SulpRZsqWZyUXLojgI4=
 
 __EOF_KUBE_ENV
 

@@ -43,6 +43,15 @@ var protokubeAsset map[architectures.Architecture]*assets.MirroredAsset
 // channelsAsset caches the channels binary download url/hash
 var channelsAsset map[architectures.Architecture]*assets.MirroredAsset
 
+// ResetCachesForTesting clears cached kOps asset locations after tests change global configuration.
+// It must not be called concurrently with asset lookup.
+func ResetCachesForTesting() {
+	kopsBaseURL = nil
+	nodeUpAsset = nil
+	protokubeAsset = nil
+	channelsAsset = nil
+}
+
 // BaseURL returns the base url for the distribution of kops - in particular for nodeup & docker images
 func BaseURL() (*url.URL, error) {
 	// returning cached value
