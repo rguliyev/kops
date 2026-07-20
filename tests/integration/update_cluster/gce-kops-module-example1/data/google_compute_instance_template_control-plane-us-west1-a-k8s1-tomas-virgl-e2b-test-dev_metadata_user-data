@@ -3,10 +3,10 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-NODEUP_URL_AMD64=https://artifacts.k8s.io/binaries/kops/1.34.0-beta.1/linux/amd64/nodeup,https://github.com/kubernetes/kops/releases/download/v1.34.0-beta.1/nodeup-linux-amd64
-NODEUP_HASH_AMD64=c86e072f622b91546b7b3f3cb1a0f8a131e48b966ad018a0ac1520ceedf37725
-NODEUP_URL_ARM64=https://artifacts.k8s.io/binaries/kops/1.34.0-beta.1/linux/arm64/nodeup,https://github.com/kubernetes/kops/releases/download/v1.34.0-beta.1/nodeup-linux-arm64
-NODEUP_HASH_ARM64=64a9a9510538a449e85d05e13e3cd98b80377d68a673447c26821d40f00f0075
+NODEUP_URL_AMD64=https://artifacts.k8s.io/binaries/kops/1.35.1/linux/amd64/nodeup,https://github.com/kubernetes/kops/releases/download/v1.35.1/nodeup-linux-amd64
+NODEUP_HASH_AMD64=b6f5dded0fabdda70d1939911a802dd52ef38e221b24b478f9fd78920223a891
+NODEUP_URL_ARM64=https://artifacts.k8s.io/binaries/kops/1.35.1/linux/arm64/nodeup,https://github.com/kubernetes/kops/releases/download/v1.35.1/nodeup-linux-arm64
+NODEUP_HASH_ARM64=96097ccc589a9c5dfeddb1bbe75d54194cccf2b50674025297f9177bcb52b1d3
 
 
 
@@ -125,7 +125,7 @@ ClusterName: k8s1.tomas-virgl.e2b-test.dev
 ConfigBase: memfs://tests/k8s1.tomas-virgl.e2b-test.dev
 InstanceGroupName: control-plane-us-west1-a
 InstanceGroupRole: ControlPlane
-NodeupConfigHash: 1DlfLb9kggUy8OEYebMOhCet08bx5wUL2/d5WNBHiBE=
+NodeupConfigHash: k8JdW522LCf99LRB7XMg/JGn7CCZSKc0nXpYD2uBvfY=
 
 __EOF_KUBE_ENV
 
