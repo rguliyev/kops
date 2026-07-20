@@ -52,12 +52,16 @@ import (
 
 // updateClusterTestBase is added automatically to the srcDir on all
 // tests using runTest, including runTestTerraformAWS, runTestTerraformGCE
-const updateClusterTestBase = "../../tests/integration/update_cluster/"
+const (
+	updateClusterTestBase             = "../../tests/integration/update_cluster/"
+	defaultIntegrationTestKopsVersion = "1.34.0-beta.1"
+)
 
 type integrationTest struct {
 	clusterName    string
 	srcDir         string
 	version        string
+	kopsVersion    string
 	private        bool
 	zones          int
 	expectPolicies bool
@@ -109,6 +113,18 @@ func (i *integrationTest) withStartupScript() *integrationTest {
 func (i *integrationTest) withVersion(version string) *integrationTest {
 	i.version = version
 	return i
+}
+
+func (i *integrationTest) withKopsVersion(version string) *integrationTest {
+	i.kopsVersion = version
+	return i
+}
+
+func (i *integrationTest) effectiveKopsVersion() string {
+	if i.kopsVersion != "" {
+		return i.kopsVersion
+	}
+	return defaultIntegrationTestKopsVersion
 }
 
 func (i *integrationTest) withZones(zones int) *integrationTest {
@@ -461,6 +477,7 @@ func TestMinimalGCEDNSNone(t *testing.T) {
 func TestGCEKopsModuleExample1(t *testing.T) {
 	newIntegrationTest("k8s1.tomas-virgl.e2b-test.dev", "gce-kops-module-example1").
 		withoutSSHKey().
+		withKopsVersion("1.35.1").
 		withGCEProject("e2b-dev-tomas-virgl-k8s", "us-west1").
 		withGCEInstanceGroups(
 			[]string{"control-plane-us-west1-a", "control-plane-us-west1-b", "control-plane-us-west1-c"},
@@ -1535,7 +1552,7 @@ func (i *integrationTest) runTestTerraformAWS(t *testing.T) {
 	h := testutils.NewIntegrationTestHarness(t)
 	defer h.Close()
 
-	h.MockKopsVersion("1.34.0-beta.1")
+	h.MockKopsVersion(i.effectiveKopsVersion())
 	h.SetupMockAWS()
 
 	expectedFilenames := i.expectTerraformFilenames
@@ -1626,7 +1643,7 @@ func (i *integrationTest) runTestPhase(t *testing.T, phase cloudup.Phase) {
 	h := testutils.NewIntegrationTestHarness(t)
 	defer h.Close()
 
-	h.MockKopsVersion("1.34.0-beta.1")
+	h.MockKopsVersion(i.effectiveKopsVersion())
 	h.SetupMockAWS()
 	phaseName := string(phase)
 	if phaseName == "" {
@@ -1674,7 +1691,7 @@ func (i *integrationTest) runTestTerraformGCE(t *testing.T) {
 	h := testutils.NewIntegrationTestHarness(t)
 	defer h.Close()
 
-	h.MockKopsVersion("1.34.0-beta.1")
+	h.MockKopsVersion(i.effectiveKopsVersion())
 	if i.gceProject == "" {
 		h.SetupMockGCE()
 	} else {
@@ -1743,7 +1760,7 @@ func (i *integrationTest) runTestTerraformHetzner(t *testing.T) {
 	h := testutils.NewIntegrationTestHarness(t)
 	defer h.Close()
 
-	h.MockKopsVersion("1.34.0-beta.1")
+	h.MockKopsVersion(i.effectiveKopsVersion())
 
 	expectedFilenames := i.expectTerraformFilenames
 
@@ -1784,7 +1801,7 @@ func (i *integrationTest) runTestTerraformScaleway(t *testing.T) {
 	h := testutils.NewIntegrationTestHarness(t)
 	defer h.Close()
 
-	h.MockKopsVersion("1.34.0-beta.1")
+	h.MockKopsVersion(i.effectiveKopsVersion())
 
 	expectedFilenames := i.expectTerraformFilenames
 
