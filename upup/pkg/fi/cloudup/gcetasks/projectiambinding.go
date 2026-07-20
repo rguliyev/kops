@@ -134,21 +134,23 @@ func (_ *ProjectIAMBinding) RenderGCE(t *gce.GCEAPITarget, a, e, changes *Projec
 	return nil
 }
 
-// terraformProjectIAMBinding is the model for a terraform google_project_iam_binding rule
-type terraformProjectIAMBinding struct {
-	Project string                     `cty:"project"`
-	Role    string                     `cty:"role"`
-	Members []*terraformWriter.Literal `cty:"members"`
+// terraformProjectIAMMember is the model for a terraform google_project_iam_member rule.
+type terraformProjectIAMMember struct {
+	Project string                   `cty:"project"`
+	Role    string                   `cty:"role"`
+	Member  *terraformWriter.Literal `cty:"member"`
 }
 
 func (_ *ProjectIAMBinding) RenderTerraform(t *terraform.TerraformTarget, a, e, changes *ProjectIAMBinding) error {
-	tf := &terraformProjectIAMBinding{
+	// Render an additive member to match the API target and avoid owning all
+	// principals granted the role on the project.
+	tf := &terraformProjectIAMMember{
 		Project: fi.ValueOf(e.Project),
 		Role:    fi.ValueOf(e.Role),
-		Members: []*terraformWriter.Literal{e.MemberServiceAccount.TerraformLink_Member()},
+		Member:  e.MemberServiceAccount.TerraformLink_Member(),
 	}
 
-	return t.RenderResource("google_project_iam_binding", *e.Name, tf)
+	return t.RenderResource("google_project_iam_member", *e.Name, tf)
 }
 
 func patchCRMPolicy(policy *cloudresourcemanager.Policy, wantMember string, wantRole string) bool {

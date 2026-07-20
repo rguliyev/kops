@@ -18,10 +18,14 @@ package gcetasks
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	gcemock "k8s.io/kops/cloudmock/gce"
 	"k8s.io/kops/upup/pkg/fi"
+	"k8s.io/kops/upup/pkg/fi/cloudup/terraform"
 )
 
 func TestProjectIAMBinding(t *testing.T) {
@@ -67,5 +71,41 @@ func TestProjectIAMBinding(t *testing.T) {
 	{
 		allTasks := buildTasks()
 		checkNoChanges(t, ctx, cloud, allTasks)
+	}
+}
+
+func TestProjectIAMBindingRenderTerraform(t *testing.T) {
+	outDir := t.TempDir()
+	cloud := gcemock.InstallMockGCECloud("us-test1", "testproject")
+	target := terraform.NewTerraformTarget(cloud, "testproject", outDir, nil)
+	task := &ProjectIAMBinding{
+		Name:    fi.PtrTo("serviceaccount-nodes"),
+		Project: fi.PtrTo("testproject"),
+		MemberServiceAccount: &ServiceAccount{
+			Name: fi.PtrTo("node"),
+		},
+		Role: fi.PtrTo("roles/compute.viewer"),
+	}
+
+	if err := task.RenderTerraform(target, nil, task, task); err != nil {
+		t.Fatalf("RenderTerraform() error: %v", err)
+	}
+	if err := target.Finish(nil); err != nil {
+		t.Fatalf("Finish() error: %v", err)
+	}
+
+	b, err := os.ReadFile(filepath.Join(outDir, "kubernetes.tf"))
+	if err != nil {
+		t.Fatalf("reading rendered Terraform: %v", err)
+	}
+	rendered := string(b)
+	if !strings.Contains(rendered, `resource "google_project_iam_member" "serviceaccount-nodes"`) {
+		t.Errorf("rendered Terraform does not contain google_project_iam_member:\n%s", rendered)
+	}
+	if !strings.Contains(rendered, `member  = format("serviceAccount:%s", google_service_account.node.email)`) {
+		t.Errorf("rendered Terraform does not contain the service account member expression:\n%s", rendered)
+	}
+	if strings.Contains(rendered, "google_project_iam_binding") || strings.Contains(rendered, "members =") {
+		t.Errorf("rendered Terraform contains authoritative IAM binding syntax:\n%s", rendered)
 	}
 }

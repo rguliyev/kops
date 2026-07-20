@@ -669,14 +669,14 @@ resource "google_compute_subnetwork" "us-test1-minimal-gce-example-com" {
   stack_type    = "IPV4_ONLY"
 }
 
-resource "google_project_iam_binding" "serviceaccount-control-plane" {
-  members = [format("serviceAccount:%s", google_service_account.control-plane.email)]
+resource "google_project_iam_member" "serviceaccount-control-plane" {
+  member  = format("serviceAccount:%s", google_service_account.control-plane.email)
   project = "testproject"
   role    = "roles/container.serviceAgent"
 }
 
-resource "google_project_iam_binding" "serviceaccount-nodes" {
-  members = [format("serviceAccount:%s", google_service_account.node.email)]
+resource "google_project_iam_member" "serviceaccount-nodes" {
+  member  = format("serviceAccount:%s", google_service_account.node.email)
   project = "testproject"
   role    = "roles/compute.viewer"
 }
