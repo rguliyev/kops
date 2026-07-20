@@ -397,8 +397,9 @@ resource "google_compute_instance_group_manager" "a-master-us-test1-a-minimal-gc
   name                           = "a-master-us-test1-a-minimal-gce-example-com"
   target_size                    = 1
   update_policy {
-    minimal_action = "REPLACE"
-    type           = "OPPORTUNISTIC"
+    max_unavailable_fixed = 1
+    minimal_action        = "REPLACE"
+    type                  = "OPPORTUNISTIC"
   }
   version {
     instance_template = google_compute_instance_template.master-us-test1-a-minimal-gce-example-com.self_link
@@ -415,8 +416,9 @@ resource "google_compute_instance_group_manager" "a-nodes-minimal-gce-example-co
   name                           = "a-nodes-minimal-gce-example-com"
   target_size                    = 1
   update_policy {
-    minimal_action = "REPLACE"
-    type           = "OPPORTUNISTIC"
+    max_unavailable_fixed = 1
+    minimal_action        = "REPLACE"
+    type                  = "OPPORTUNISTIC"
   }
   version {
     instance_template = google_compute_instance_template.nodes-minimal-gce-example-com.self_link
@@ -433,8 +435,9 @@ resource "google_compute_instance_group_manager" "b-nodes-minimal-gce-example-co
   name                           = "b-nodes-minimal-gce-example-com"
   target_size                    = 1
   update_policy {
-    minimal_action = "REPLACE"
-    type           = "OPPORTUNISTIC"
+    max_unavailable_fixed = 1
+    minimal_action        = "REPLACE"
+    type                  = "OPPORTUNISTIC"
   }
   version {
     instance_template = google_compute_instance_template.nodes-minimal-gce-example-com.self_link
